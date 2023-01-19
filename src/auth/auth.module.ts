@@ -7,13 +7,10 @@ import { LocalStrategy } from './local.strategy';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './constants';
 import { JwtStrategy } from './jwt.strategy';
-import { SessionEntity } from '../entities/session.entity';
-import { Repository } from 'typeorm';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersEntity } from '../entities/users.entity';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
-  imports: [forwardRef(() => UsersModule), PassportModule,TypeOrmModule.forFeature([SessionEntity]),
+  imports: [forwardRef(() => UsersModule), PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret, signOptions: { expiresIn: '1h' },
     }),

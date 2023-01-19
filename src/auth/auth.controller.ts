@@ -11,7 +11,7 @@ export class AuthController {
   }
 
   @UseGuards(LocalAuthGuard)
-  @ApiOperation({summary:'Delete news'})
+  @ApiOperation({summary:'Login user'})
   @ApiResponse({
     status: 200,
     description: 'Login user',
@@ -22,6 +22,6 @@ export class AuthController {
     const{accessToken,id}=await this.authService.login(req.user);
     response.cookie('authorization',accessToken.toString());
     response.cookie('userId',id);
-    return accessToken;
+    return {accessToken,id:req.user._doc._id};
   }
 }

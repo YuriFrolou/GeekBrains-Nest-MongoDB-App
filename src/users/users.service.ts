@@ -1,21 +1,21 @@
-import { HttpException, HttpStatus, Injectable, NotFoundException, Req, UnauthorizedException } from '@nestjs/common';
+import {Injectable, NotFoundException, Req, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UsersEntity } from '../entities/users.entity';
-import { Repository } from 'typeorm';
 import { hash } from '../utils/crypto';
 import { Role } from '../auth/role/role.enum';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from '../schemas/user.schema';
 
 @Injectable()
 export class UsersService {
 
 
-  constructor(@InjectRepository(UsersEntity) private readonly usersRepository: Repository<UsersEntity>) {
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {
   }
 
-  async createUser(createUserDto: CreateUserDto):Promise<UsersEntity> {
-    const user = new UsersEntity();
+  async createUser(createUserDto: CreateUserDto):Promise<User> {
+    const user = new this.userModel(createUserDto);
     user.firstName= createUserDto.firstName;
     user.lastName= createUserDto.lastName;
     user.email= createUserDto.email;
@@ -26,20 +26,15 @@ export class UsersService {
     user.createdAt= new Date();
     user.updatedAt= new Date();
 
-    return await this.usersRepository.save(user);
+    return await user.save();
   }
 
-  async getUsers():Promise<UsersEntity[]> {
-    return await this.usersRepository.find();
+  async getUsers():Promise<User[]> {
+    return await this.userModel.find().exec();
   }
 
-  async getUserById(id: number):Promise<UsersEntity> {
-    const user = await this.usersRepository.findOne({
-      where: {
-        id,
-      },
-      relations: ['sessions'],
-    });
+  async getUserById(id: string):Promise<User> {
+    const user = await this.userModel.findOne({_id:id});
 
     if (!user) {
       throw new NotFoundException();
@@ -48,29 +43,23 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email): Promise<UsersEntity> {
-    return this.usersRepository.findOne({
-      where: {
-        email,
-      },
-    });
+  async findByEmail(email): Promise<User> {
+    return this.userModel.findOne({email});
   }
 
-  async setModerator(idUser): Promise<UsersEntity> {
-    const _user = await this.getUserById(idUser);
+  async setModerator(id): Promise<User> {
+    const _user = await this.userModel.findOne({_id:id});
     if (!_user) {
       throw new UnauthorizedException();
     }
     if(_user.roles!==Role.Admin){
       _user.roles = Role.Moderator;
     }
-    return this.usersRepository.save(_user);
+    return await _user.save();
   }
 
-  async updateUser(id: number, updateUserDto: UpdateUserDto):Promise<UsersEntity> {
-    const user = await this.usersRepository.findOneBy({ id });
-
-
+  async updateUser(id: string, updateUserDto: UpdateUserDto):Promise<User> {
+    const user = await this.userModel.findOne({ _id:id });
     user.firstName= updateUserDto.firstName?updateUserDto.firstName : user.firstName;
     user.lastName=updateUserDto.lastName? updateUserDto.lastName : user.lastName;
     user.email= updateUserDto.email?updateUserDto.email : user.email;
@@ -79,17 +68,17 @@ export class UsersService {
     user.updatedAt= new Date();
 
 
-    return await this.usersRepository.save(user);
+    return await user.save();
   }
 
 
-  async removeUser(id: number):Promise<UsersEntity[]> {
-    const user = await this.usersRepository.findOneBy({ id });
+  async removeUser(id: string):Promise<User[]> {
+    const user = await this.userModel.findOne({ _id:id });
     if (!user) {
       throw new NotFoundException();
     }
-    await this.usersRepository.remove(user);
-    return await this.usersRepository.find();
+    await this.userModel.deleteOne(user._id);
+    return await this.userModel.find().exec();
   }
 
 }

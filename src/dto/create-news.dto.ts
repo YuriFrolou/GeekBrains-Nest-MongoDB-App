@@ -26,13 +26,13 @@ export class CreateNewsDto {
 
 
     @ApiProperty({example:'2',description:'Уникальный идентификатор пользователя - внешний ключ'})
-    @IsNumberString()
-    userId: number;
+    @IsString()
+    userId: string;
 
 
     @ApiProperty({example:'2',description:'Уникальный идентификатор категории - внешний ключ'})
-    @IsNumberString()
-    categoryId: number;
+    @IsString()
+    categoryId: string;
 }
 
 export type NewsCreate=Record<string|number,CreateNewsDto>;
