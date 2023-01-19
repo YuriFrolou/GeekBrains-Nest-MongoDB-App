@@ -16,13 +16,12 @@ import { Role } from '../../auth/role/role.enum';
 import { UpdateCommentDto } from '../../dto/update-comment.dto';
 
 
-export type Comment = { message: string; idNews: number };
-export type DeletedComment = {idNews: number; idComment: number };
-export type UpdatedComment = {newsId: number; id: number; message: string};
+export type Comment = { message: string; idNews: string };
+export type DeletedComment = {idNews: string; idComment: string };
+export type UpdatedComment = {newsId: string; id: string; message: string};
 
 @WebSocketGateway()
-export class SocketCommentsGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+export class SocketCommentsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   constructor(private readonly commentsService: CommentsService) {}
   @WebSocketServer() server: Server;
@@ -32,7 +31,7 @@ export class SocketCommentsGateway
   @SubscribeMessage('addComment')
   async handleMessage(client: Socket, comment: Comment):Promise<void> {
     const { idNews, message } = comment;
-     const userId: number = client.data.user.sub;
+     const userId: string = client.data.user.id;
      const _comment = await this.commentsService.create(idNews, message, userId);
      this.server.to(idNews.toString()).emit('newComment', _comment);
   }
@@ -42,10 +41,10 @@ export class SocketCommentsGateway
   @SubscribeMessage('deleteComment')
   async deleteMessage(client: Socket, comment: DeletedComment):Promise<void> {
     const { idNews, idComment } = comment;
-    const userId: number = client.data.user.sub;
-    const _comment = await this.commentsService.findOne(+idComment);
-    if(_comment&&_comment.user.id===userId||_comment.user.roles==='admin'){
-      await this.commentsService.remove(+idComment,+userId);
+    const userId: string = client.data.user.id;
+    const _comment = await this.commentsService.findOne(idComment);
+    if(_comment&&_comment.user.toString()==userId||_comment.user.roles==='admin'){
+      await this.commentsService.remove(idComment,userId);
       this.server.to(idNews.toString()).emit('removeComment', { id: idComment });
     }
   }
@@ -54,12 +53,12 @@ export class SocketCommentsGateway
   @SubscribeMessage('updateComment')
   async updateMessage(client: Socket, comment: UpdatedComment):Promise<void> {
     const { newsId, id, message } = comment;
-    const userId: number = client.data.user.sub;
+    const userId: string = client.data.user.id;
     let _comment = await this.commentsService.findOne(id);
-     if(_comment&&_comment.user.id==userId){
+     if(_comment&&_comment.user.toString()==userId){
       _comment = await this.commentsService.update(id,message);
       this.server.to(newsId.toString()).emit('updatedComment', {id,comment:_comment });
-     }
+      }
   }
 
   @OnEvent('comment.remove')

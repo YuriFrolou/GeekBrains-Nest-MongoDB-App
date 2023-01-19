@@ -20,13 +20,13 @@ export class CreateCommentDto {
     cover?: string;
 
     @ApiProperty({example:'3',description:'Уникальный идентификатор новости - внешний ключ'})
-    @IsNumberString()
+    @IsString()
     @IsOptional()
-    newsId: number;
+    newsId: string;
 
     @ApiProperty({example:'2',description:'Уникальный идентификатор пользователя - внешний ключ'})
-    @IsNumberString()
-    userId: number;
+    @IsString()
+    userId: string;
 }
 
 export type Comments = Record<string | number, CreateCommentDto[]>;

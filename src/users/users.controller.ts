@@ -14,12 +14,12 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UsersEntity } from '../entities/users.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { HelperFileLoad } from '../utils/HelperFileLoad';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LoginUserDto } from '../dto/login-user.dto';
+import { User } from '../schemas/user.schema';
 
 const PATH_NEWS = '/static/';
 HelperFileLoad.path = PATH_NEWS;
@@ -37,7 +37,7 @@ export class UsersController {
   @ApiResponse({
     status: 201,
     description: 'create user',
-    type: UsersEntity,
+    type: User,
   })
   @UseInterceptors(FileInterceptor('cover', {
     storage: diskStorage({
@@ -45,7 +45,7 @@ export class UsersController {
       filename: HelperFileLoad.customFileName,
     }),
   }))
-  async createUser(@Body() createUserDto: CreateUserDto, @UploadedFile() cover: Express.Multer.File=null): Promise<UsersEntity> {
+  async createUser(@Body() createUserDto: CreateUserDto, @UploadedFile() cover: Express.Multer.File=null): Promise<User> {
     if (cover?.filename) {
       createUserDto.cover = PATH_NEWS + cover.filename;
     } else {
@@ -74,7 +74,7 @@ export class UsersController {
     description: 'update profile in browser',
   })
   @Render('user-update')
-  async updateUserOnBrowser(@Param('id') id: number) {
+  async updateUserOnBrowser(@Param('id') id: string) {
     const _user = await this.usersService.getUserById(id);
     return {
       user:_user
@@ -86,9 +86,9 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'get all users',
-    type: [UsersEntity],
+    type: [User],
   })
-  async getUsers(): Promise<UsersEntity[]> {
+  async getUsers(): Promise<User[]> {
     return await this.usersService.getUsers();
   }
 
@@ -97,9 +97,9 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'get user by id',
-    type: UsersEntity,
+    type: User,
   })
-  async getUser(@Req() request, @Param('id') id: number): Promise<UsersEntity> {
+  async getUser(@Req() request, @Param('id') id: string): Promise<User> {
     console.log(request.headers);
     return await this.usersService.getUserById(id);
   }
@@ -112,7 +112,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'update user',
-    type: UsersEntity,
+    type: User,
   })
   @ApiResponse({
     status: 403,
@@ -124,9 +124,9 @@ export class UsersController {
       filename: HelperFileLoad.customFileName,
     }),
   }))
-  async updateUser(@Req() request, @Body() updateUserDto: UpdateUserDto,@UploadedFile() cover: Express.Multer.File=null): Promise<UsersEntity> {
+  async updateUser(@Req() request, @Body() updateUserDto: UpdateUserDto,@UploadedFile() cover: Express.Multer.File=null): Promise<User> {
    const userId=request.user.userId;
-
+    console.log(userId);
    if(!userId){
      throw new HttpException("Нет доступа", HttpStatus.FORBIDDEN);
    }
@@ -142,9 +142,9 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'delete user',
-    type: [UsersEntity],
+    type: [User],
   })
-  async removeUser(@Param('id') id: number): Promise<UsersEntity[]> {
+  async removeUser(@Param('id') id: string): Promise<User[]> {
     return await this.usersService.removeUser(id);
   }
 
@@ -154,9 +154,9 @@ export class UsersController {
   @ApiResponse({
     status: 201,
     description: 'set user role',
-    type: UsersEntity,
+    type: User,
   })
-  async setModerator(@Param('id') id: number): Promise<UsersEntity> {
+  async setModerator(@Param('id') id: string): Promise<User> {
     return await this.usersService.setModerator(id);
   }
 }

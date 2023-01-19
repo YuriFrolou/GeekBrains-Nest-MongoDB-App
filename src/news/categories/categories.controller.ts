@@ -4,7 +4,7 @@ import { CreateCategoryDto } from '../../dto/create-category.dto';
 import { UpdateCategoryDto } from '../../dto/update-category.dto';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CategoriesEntity } from '../../entities/category.entity';
-import { NewsEntity } from '../../entities/news.entity';
+import { Category } from '../../schemas/category.schema';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -19,9 +19,9 @@ export class CategoriesController {
   @ApiResponse({
     status: 201,
     description: 'create category',
-    type:CategoriesEntity
+    type:Category
   })
-  async create(@Body() createCategoryDto: CreateCategoryDto):Promise<CategoriesEntity> {
+  async create(@Body() createCategoryDto: CreateCategoryDto):Promise<Category> {
     return await this.categoriesService.create({
       ...createCategoryDto
     });
@@ -32,9 +32,9 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'get all categories',
-    type:[CategoriesEntity]
+    type:[Category]
   })
-  async findAll():Promise<CategoriesEntity[]> {
+  async findAll():Promise<Category[]> {
     return await this.categoriesService.findAll();
   }
 
@@ -43,9 +43,9 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'get category by id',
-    type:CategoriesEntity
+    type:Category
   })
-  async findOne(@Param('id') id: number):Promise<CategoriesEntity> {
+  async findOne(@Param('id') id: string):Promise<Category> {
     return await this.categoriesService.findOne(id);
   }
 
@@ -55,9 +55,9 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'update category',
-    type:CategoriesEntity
+    type:Category
   })
-  async update(@Param('id') id: number, @Body() updateCategoryDto: UpdateCategoryDto):Promise<CategoriesEntity> {
+  async update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto):Promise<Category> {
     return await this.categoriesService.update(id, updateCategoryDto);
   }
 
@@ -66,9 +66,9 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'remove category',
-    type:[CategoriesEntity]
+    type:[Category]
   })
-  async remove(@Param('id') id: number):Promise<CategoriesEntity[]> {
+  async remove(@Param('id') id: string):Promise<Category[]> {
     return await this.categoriesService.remove(id);
   }
 }

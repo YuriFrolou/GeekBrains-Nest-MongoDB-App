@@ -1,25 +1,24 @@
-import {HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateNewsDto} from '../dto/create-news.dto';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateNewsDto } from '../dto/create-news.dto';
 import { UpdateNewsDto } from '../dto/update-news.dto';
 import { MailService } from '../mail/mail.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { NewsEntity } from '../entities/news.entity';
 import { UsersService } from '../users/users.service';
 import { CategoriesService } from './categories/categories.service';
+import { NewsItem, NewsItemDocument } from '../schemas/news.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class NewsService {
 
-  constructor(@InjectRepository(NewsEntity) private readonly newsRepository: Repository<NewsEntity>,
-               private readonly mailService: MailService,
-               private readonly usersService: UsersService,
-               private readonly categoriesService: CategoriesService,
-
+  constructor(@InjectModel(NewsItem.name) private newsItemModel: Model<NewsItemDocument>,
+              private readonly mailService: MailService,
+              private readonly usersService: UsersService,
+              private readonly categoriesService: CategoriesService,
   ) {
   }
 
-  async createNews(createNewsDto: CreateNewsDto):Promise<NewsEntity> {
+  async createNews(createNewsDto: CreateNewsDto): Promise<NewsItem> {
     const _user = await this.usersService.getUserById(createNewsDto.userId);
     const _category = await this.categoriesService.findOne(createNewsDto.categoryId);
     if (!_user) {
@@ -32,7 +31,7 @@ export class NewsService {
         'Не существует такой категории', HttpStatus.BAD_REQUEST,
       );
     }
-    const newsEntity = new NewsEntity();
+    const newsEntity = new this.newsItemModel(createNewsDto);
     newsEntity.title = createNewsDto.title;
     newsEntity.description = createNewsDto.description;
     newsEntity.createdAt = new Date();
@@ -41,31 +40,25 @@ export class NewsService {
     newsEntity.user = _user;
     newsEntity.category = _category;
 
-    return await this.newsRepository.save(newsEntity);
+    return await newsEntity.save();
   }
 
-  async findAll(): Promise<NewsEntity[]> {
-    return await this.newsRepository.find();
+  async findAll(): Promise<NewsItem[]> {
+    return await this.newsItemModel.find().exec();
   }
 
-  async findAllByUser(userId: number):Promise<NewsEntity[]> {
-    return await this.newsRepository.find({
-      where: {
-        user: {
-          id: userId,
-        },
-      }
-    });
-  }
-
-  async findOneById(id: number):Promise<NewsEntity> {
-    const news = await this.newsRepository.findOne({
-      where: {
-        id,
+  async findAllByUser(userId: string): Promise<NewsItem[]> {
+    return this.newsItemModel.find({}, {
+      user: {
+        _id: userId,
       },
-      relations: ['comments','user','comments.user'],
     });
+  }
 
+  async findOneById(id: string):Promise<NewsItem>{
+      const news = await this.newsItemModel.findOne({ _id:id});
+      const comments = await this.newsItemModel.aggregate([{$unwind : "$comments" }])
+    console.log(comments);
     if (!news) {
       throw new NotFoundException();
     }
@@ -73,34 +66,28 @@ export class NewsService {
   }
 
 
-  async update(id: number, updateNewsDto: UpdateNewsDto):Promise<NewsEntity> {
-    const news = await this.newsRepository.findOne({
-      where: {
-        id,
-      },
-    });
-
+  async update(id: string, updateNewsDto: UpdateNewsDto): Promise<NewsItem> {
+    console.log(updateNewsDto);
+    const news = await this.newsItemModel.findOne({ _id: id });
+    const prevNews:any = { ...news };
     if (!news) {
       throw new NotFoundException();
     }
-    const updatedNews = {
-      ...news,
-      title: updateNewsDto.title ? updateNewsDto.title : news.title,
-      description: updateNewsDto.description ? updateNewsDto.description : news.description,
-      updatedAt: new Date()
-    };
-    await this.newsRepository.save(updatedNews);
-    await this.mailService.updateNewsLogMessage('yf_dev_test@mail.ru', [news, updatedNews]);
-    return updatedNews;
+    news.title = updateNewsDto.title ? updateNewsDto.title : news.title;
+    news.description = updateNewsDto.description ? updateNewsDto.description : news.description;
+    news.updatedAt = new Date();
+    await news.save();
+    await this.mailService.updateNewsLogMessage('yf_dev_test@mail.ru', [prevNews, news]);
+    return news;
   }
 
 
-  async remove(id: number):Promise<NewsEntity[]> {
-    const news = await this.newsRepository.findOneBy({ id });
+  async remove(id: string):Promise<NewsItem[]> {
+    const news = await this.newsItemModel.findOne({ _id:id });
     if (!news) {
       throw new NotFoundException();
     }
-    await this.newsRepository.remove(news);
-    return await this.newsRepository.find();
+    await this.newsItemModel.deleteOne(news._id);
+    return await this.newsItemModel.find().exec();
   }
 }

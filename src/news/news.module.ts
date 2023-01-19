@@ -3,21 +3,20 @@ import { NewsService } from './news.service';
 import { NewsController } from './news.controller';
 import { CommentsModule } from './comments/comments.module';
 import { MailModule } from '../mail/mail.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { NewsEntity } from '../entities/news.entity';
-import { CommentsEntity } from '../entities/comments.entity';
-import { UsersEntity } from '../entities/users.entity';
 import { UsersModule } from '../users/users.module';
 import { CategoriesModule } from './categories/categories.module';
-import { CommentsService } from './comments/comments.service';
-import { CategoriesService } from './categories/categories.service';
-import { CategoriesEntity } from '../entities/category.entity';
-import { MailService } from '../mail/mail.service';
-import { UsersService } from '../users/users.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { NewsItem, NewsItemSchema } from '../schemas/news.schema';
+import { Comment,CommentSchema } from '../schemas/comment.schema';
+import { User, UserSchema } from '../schemas/user.schema';
+import { Category, CategorySchema } from '../schemas/category.schema';
 
 @Module({
   imports: [MailModule,UsersModule,CategoriesModule,CommentsModule,
-    TypeOrmModule.forFeature([NewsEntity,CommentsEntity,UsersEntity,CategoriesEntity])
+    MongooseModule.forFeature([{ name: NewsItem.name, schema: NewsItemSchema },
+      { name: Comment.name, schema: CommentSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Category.name, schema: CategorySchema }])
   ],
   controllers: [NewsController],
   providers: [NewsService],
